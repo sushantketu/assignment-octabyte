@@ -1,1 +1,64 @@
+stages:
+  - test
+  - build
+  - scan
+  - deploy_staging
+  - approval
+  - deploy_production
 
+variables:
+  IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+
+before_script:
+  - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
+
+test:
+  stage: test
+  script:
+    - bash cicd/scripts/test.sh
+  only:
+    - merge_requests
+
+build:
+  stage: build
+  script:
+    - bash cicd/scripts/build.sh $IMAGE_TAG
+    - docker push $IMAGE_TAG
+  only:
+    - main
+
+scan:
+  stage: scan
+  script:
+    - bash cicd/scripts/scan.sh $IMAGE_TAG
+  only:
+    - main
+
+deploy_staging:
+  stage: deploy_staging
+  script:
+    - bash cicd/scripts/deploy.sh staging $IMAGE_TAG
+  only:
+    - main
+
+manual_approval:
+  stage: approval
+  when: manual
+  only:
+    - main
+
+deploy_production:
+  stage: deploy_production
+  script:
+    - bash cicd/scripts/deploy.sh production $IMAGE_TAG
+  when: on_success
+  needs:
+    - manual_approval
+  only:
+    - main
+
+notify_failure:
+  stage: .post
+  script:
+    - bash cicd/scripts/notify.sh "Pipeline failed for $CI_PROJECT_NAME, branch $CI_COMMIT_REF_NAME"
+  when: on_failure
