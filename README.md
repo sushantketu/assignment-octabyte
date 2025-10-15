@@ -1,80 +1,89 @@
-# assignment-octabyte
+Here's a step-by-step checklist to deploy your project on AWS using your Visual Studio Code setup and GitLab repository:
 
-## Overview
+1. AWS Account Preparation
+Ensure you have an AWS account with permissions to create EKS, EC2, VPC, RDS, S3, IAM, and CloudWatch resources.
 
-This repository contains a full production-like DevOps project demonstrating:
-- Infrastructure provisioning on AWS EKS using Terraform
-- GitLab CI/CD automation for application build, test, deploy
-- Monitoring metrics collection with Prometheus and Grafana
-- Centralized logging to Splunk using Fluent Bit
-- Secure secret management and backup best practices
+Create an EC2 Key Pair in your target region (matching the key name in your Terraform variables).
 
----
+2. Configure AWS CLI Locally
+Install AWS CLI and configure credentials in Visual Studio Code terminal:
 
-## Setup and Running the Infrastructure
+ 
+aws configure
+(Input your access key, secret key, region, default output)
 
-1. Configured AWS CLI with credentials having permissions to create EKS, RDS, VPC, etc.
-2. Updated `infra/eks/terraform.tfvars` with your desired variables (region, key name, DB creds).
-3. Initialized and apply Terraform:
+3. Prepare Local Environment
+Make sure you have:
+
+Terraform installed
+
+kubectl CLI installed
+
+aws-iam-authenticator (for EKS)
+
+docker installed (for image build/test)
+
+Clone your latest GitLab repo locally if not already:
+
+ 
+git clone https://gitlab.com/yourusername/assignment-octabyte.git
+cd assignment-octabyte
+4. Infrastructure Provisioning (Terraform)
+Edit infra/eks/terraform.tfvars to set your AWS region, bucket, key pair, DB credentials, etc.
+
+In infra/eks/, initialize and apply Terraform:
+
+ 
 terraform init
 terraform apply
+Confirm EKS, VPC, RDS, ALB, and other resources are created successfully.
 
-4. Deployed the Kubernetes manifests in `k8s-manifests/` to the EKS cluster.
-5. Configure GitLab CI/CD variables and run pipelines for build and deployment.
-6. Set up monitoring and logging by applying manifests in `monitoring/`.
+5. Setup kubeconfig for EKS
+Update your local kubeconfig for the newly created EKS cluster:
 
----
+ 
+aws eks update-kubeconfig --region <your-region> --name sushantketucluster
+Test cluster access:
 
-## Architecture Decisions
+ 
+kubectl get nodes
+6. Deploy Kubernetes Manifests
+Deploy your app and necessary resources:
 
-- Used AWS managed EKS for Kubernetes to reduce cluster management overhead.
-- VPC designed with public and private subnets for security and scalability.
-- CI/CD with GitLab to automate tests, builds, image scanning, manual approvals.
-- Prometheus + Grafana chosen for scalable, open-source metrics collection and visualization.
-- Fluent Bit aggregates container, system, and access logs, sends securely to Splunk.
-- RDS PostgreSQL for managed, automated backups and scaling database layer.
+ 
+kubectl apply -f k8s-manifests/
+7. Monitoring & Logging Setup
+Deploy Prometheus, Grafana, and Fluent Bit for Splunk (using provided YAMLs in monitoring/):
 
----
+ 
+kubectl apply -f monitoring/logging/splunk-hec-secret.yaml
+kubectl apply -f monitoring/logging/fluent-bit-configmap.yaml
+kubectl apply -f monitoring/logging/fluent-bit-daemonset.yaml
+# Similarly deploy Prometheus/Grafana using Helm or manifest as per your method
+8. GitLab CI/CD Pipeline Preparation
+On GitLab, go to Settings > CI/CD > Variables and add all required secrets:
 
-## Security Considerations
+AWS credentials (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
 
-- Used Kubernetes Secrets for sensitive data (Splunk tokens, DB passwords).
-- Terraform remote state stored in encrypted S3 bucket with restricted IAM access.
-- Network policies and security groups enforce least privilege on Kubernetes workloads.
-- Manual approval gate in CI/CD to avoid accidental production deployments.
-- TLS enabled on all ingress and communication channels.
+Docker registry creds
 
----
+Splunk HEC tokens, Slack webhook, etc.
 
-## Cost Optimization Measures
+Ensure a GitLab runner is configured (shared or your own).
 
-- Use appropriate instance types (t3.medium) and node autoscaling to lower costs.
-- EKS managed node groups reduce operational overhead and optimize utilization.
-- Use Amazon RDS for managed backups and automated patching instead of self-managed DB.
-- Use monitoring data to identify underutilized resources and control autoscale limits.
-- Destroy test environments promptly to avoid idle cloud cost.
+9. Run CI/CD Pipeline
+Make a commit/push, or manually run the pipeline from the GitLab UI (it will build, test, scan, and deploy your app to EKS).
 
----
+10. Verification
+Use kubectl get pods, kubectl get svc etc. to verify deployments.
 
-## Secret Management
+Check Prometheus/Grafana dashboards for metrics.
 
-- Kubernetes Secrets used to store credentials securely in the cluster.
-- CI/CD utilizes GitLab CI/CD variables to inject secrets at runtime.
-- Recommended to use AWS Secrets Manager or HashiCorp Vault for centralized secrets in production.
+Check Splunk for log aggregation.
 
----
+11. Security & Optimization
+Consider setting up more robust secret management (AWS Secrets Manager, Vault) and production-grade IAM roles.
 
-## Backup Strategy
+Enable backups for RDS (via AWS console or Terraform).
 
-- Backup PostgreSQL database using automated RDS snapshot features.
-- Terraform state backed up remotely in encrypted S3 bucket with versioning enabled.
-- Monitor cluster and application backups regularly; keep multiple retention intervals.
-- Use Git version control for all infrastructure and deployment code to enable rollback.
-
----
-
-## Contact and Support
-
-For any questions or assistance, contact the DevOps engineering team.
-
-This README covers all requested documentation tasks and best practices for secret management and backup consistent with our project setup.
+Monitor AWS billing for cost control.
