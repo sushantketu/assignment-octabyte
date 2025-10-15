@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: sushantketu-fluent-bit
+  namespace: kube-system
+  labels:
+    k8s-app: fluent-bit-logging
+spec:
+  selector:
+    matchLabels:
+      k8s-app: fluent-bit-logging
+  template:
+    metadata:
+      labels:
+        k8s-app: fluent-bit-logging
+    spec:
+      serviceAccountName: fluent-bit
+      containers:
+        - name: fluent-bit
+          image: fluent/fluent-bit:2.2.0
+          resources:
+            limits:
+              memory: 200Mi
+              cpu: 100m
+            requests:
+              memory: 100Mi
+              cpu: 50m
+          volumeMounts:
+            - name: varlog
+              mountPath: /var/log
+            - name: config
+              mountPath: /fluent-bit/etc/
+          env:
+            - name: SPLUNK_HEC_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: splunk-hec-secret
+                  key: splunk_hec_host
+            - name: SPLUNK_HEC_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: splunk-hec-secret
+                  key: splunk_hec_token
+      volumes:
+        - name: varlog
+          hostPath:
+            path: /var/log
+        - name: config
+          configMap:
+            name: fluent-bit-config

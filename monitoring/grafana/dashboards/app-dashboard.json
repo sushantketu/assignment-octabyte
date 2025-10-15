@@ -1,0 +1,60 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Application Metrics",
+    "panels": [
+      {
+        "type": "graph",
+        "title": "HTTP Request Rate",
+        "targets": [
+          {
+            "expr": "rate(http_requests_total[5m])",
+            "format": "time_series",
+            "legendFormat": "{{handler}}"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "ops",
+            "label": "Requests per Second"
+          }
+        ]
+      },
+      {
+        "type": "graph",
+        "title": "HTTP Error Rate",
+        "targets": [
+          {
+            "expr": "rate(http_requests_total{status=~\"5..\"}[5m])",
+            "format": "time_series",
+            "legendFormat": "{{handler}}"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "ops",
+            "label": "Errors per Second"
+          }
+        ]
+      },
+      {
+        "type": "graph",
+        "title": "Request Latency (95th percentile)",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))",
+            "format": "time_series"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "seconds",
+            "label": "Latency"
+          }
+        ]
+      }
+    ],
+    "schemaVersion": 16,
+    "version": 1
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Infrastructure Monitoring",
+    "panels": [
+      {
+        "type": "graph",
+        "title": "Node CPU Utilization",
+        "targets": [
+          {
+            "expr": "100 - (avg by (instance) (irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+            "format": "time_series",
+            "legendFormat": "{{instance}}"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "percent",
+            "label": "CPU Usage"
+          }
+        ]
+      },
+      {
+        "type": "graph",
+        "title": "Node Memory Usage",
+        "targets": [
+          {
+            "expr": "(node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100",
+            "format": "time_series",
+            "legendFormat": "{{instance}}"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "percent",
+            "label": "Memory Usage"
+          }
+        ]
+      }
+    ],
+    "schemaVersion": 16,
+    "version": 1
+  }
+}
