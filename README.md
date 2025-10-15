@@ -13,14 +13,13 @@ This repository contains a full production-like DevOps project demonstrating:
 
 ## Setup and Running the Infrastructure
 
-1. Configure AWS CLI with credentials having permissions to create EKS, RDS, VPC, etc.
-2. Update `infra/eks/terraform.tfvars` with your desired variables (region, key name, DB creds).
-3. Initialize and apply Terraform:
+1. Configured AWS CLI with credentials having permissions to create EKS, RDS, VPC, etc.
+2. Updated `infra/eks/terraform.tfvars` with your desired variables (region, key name, DB creds).
+3. Initialized and apply Terraform:
 terraform init
 terraform apply
 
-text
-4. Deploy the Kubernetes manifests in `k8s-manifests/` to the EKS cluster.
+4. Deployed the Kubernetes manifests in `k8s-manifests/` to the EKS cluster.
 5. Configure GitLab CI/CD variables and run pipelines for build and deployment.
 6. Set up monitoring and logging by applying manifests in `monitoring/`.
 
