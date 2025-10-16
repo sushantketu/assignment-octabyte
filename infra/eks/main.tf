@@ -139,30 +139,26 @@ resource "aws_security_group" "eks_worker_sg" {
 
 # EKS Cluster with Node Group(s)
 module "eks" {
-  source          = "terraform-aws-modules/eks/aws"
+  source  = "terraform-aws-modules/eks/aws"
+  version = "13.2.0"  # Or your module version
+
   cluster_name    = "sushantketucluster"
   cluster_version = "1.27"
 
-  vpc_id     = aws_vpc.sushantketu_vpc.id
-  subnet_ids = concat(aws_subnet.public[*].id, aws_subnet.private[*].id)
-
-  cluster_security_group_id = aws_security_group.eks_cluster_sg.id
+  subnets = aws_subnet.private[*].id  # Use subnets, not subnet_ids
 
   node_groups = {
-    sushantketu_nodes = {
+    eks_nodes = {
       desired_capacity = 2
       max_capacity     = 3
       min_capacity     = 1
       instance_type    = "t3.medium"
-      key_name         = var.key_name
+      key_name        = var.key_name
       additional_security_group_ids = [aws_security_group.eks_worker_sg.id]
     }
   }
 
-  tags = {
-    Environment = "production"
-    Owner       = "sushantketu"
-  }
+  vpc_id = aws_vpc.sushantketuvpc.id
 }
 
 # RDS PostgreSQL Instance
