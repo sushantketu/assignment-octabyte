@@ -3,6 +3,7 @@ provider "aws" {
 }
 
 # VPC
+# VPC
 resource "aws_vpc" "sushantketu_vpc" {
   cidr_block = var.vpc_cidr
   enable_dns_support   = true
@@ -64,10 +65,10 @@ resource "aws_route_table_association" "public_route_assoc" {
 
 # NAT Gateway for Private Subnets
 resource "aws_eip" "nat_eip" {
-  count = length(var.availability_zones)
-  vpc = true
-  depends_on = [aws_internet_gateway.igw]
+  associate_with_private_ip = true # if applicable
+  # or remove the vpc argument entirely if not needed
 }
+
 
 resource "aws_nat_gateway" "nat" {
   count = length(var.availability_zones)
@@ -137,29 +138,29 @@ resource "aws_security_group" "eks_worker_sg" {
   }
 }
 
-# EKS Cluster with Node Group(s)
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "13.2.0"  # Or your module version
+  version = "21.4.0"
 
-  cluster_name    = "sushantketucluster"
-  cluster_version = "1.27"
+  name              = "sushantketucluster"
+  kubernetes_version = "1.27"
+  vpc_id            = aws_vpc.sushantketuvpc.id
+  subnet_ids        = aws_subnet.private[*].id
 
-  subnets = aws_subnet.private[*].id  # Use subnets, not subnet_ids
-
-  node_groups = {
+  managed_node_groups = {
     eks_nodes = {
-      desired_capacity = 2
-      max_capacity     = 3
-      min_capacity     = 1
-      instance_type    = "t3.medium"
-      key_name        = var.key_name
+      desired_capacity             = 2
+      max_capacity                 = 3
+      min_capacity                 = 1
+      instance_type                = "t3.medium"
+      key_name                    = var.key_name
       additional_security_group_ids = [aws_security_group.eks_worker_sg.id]
     }
   }
-
-  vpc_id = aws_vpc.sushantketuvpc.id
 }
+
+
+
 
 # RDS PostgreSQL Instance
 resource "aws_db_subnet_group" "rds_subnet_group" {
@@ -177,7 +178,7 @@ resource "aws_db_instance" "postgres" {
   engine             = "postgres"
   engine_version     = "15.2"
   instance_class     = "db.t3.micro"
-  name               = var.db_name
+  db_name               = var.db_name
   username           = var.db_username
   password           = var.db_password
   parameter_group_name = "default.postgres15"
